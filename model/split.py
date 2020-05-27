@@ -1,9 +1,10 @@
 # coding=utf-8
 '''
+@name split.py
 @author Jing Wang, Rongqing Li,     
         Yuting Ling, Qitan Shao
 @date 5/26/2020
-@description A 
+@description Complete procedure of task 1,2
 '''
 import os
 import pandas as pd
@@ -17,7 +18,6 @@ from pyltp import NamedEntityRecognizer
 parser = argparse.ArgumentParser(description='Pyltp for datamining experiment')
 parser.add_argument('--method', help='Set the method of combining entities', default='postaget', type=str)
 args = parser.parse_args()
-
 
 
 def PostagResult(datas, postagger, segmentor):
@@ -54,22 +54,27 @@ def NameEntityResult(datas, postagger, segmentor, recognizer):
     return entities
 
 
-def dump_to_file(target):
+def dump_result_to_csv(target):
     writer = csv.writer(target, delimiter=',')
     writer.writerow(['entity', 'times', 'length', 'source'])
     for k, v in sorted_entities:
         writer.writerow([k, v[0], len(k), v[1]])
 
 if __name__ == '__main__':
-    segmentor = Segmentor()  # initialize
+    segmentor = Segmentor()  # Initialize model
     postagger = Postagger()
     recognizer = NamedEntityRecognizer()
-    segmentor.load('cws.model')  # load model
+    segmentor.load('cws.model')  # Load model
     postagger.load('pos.model')
     recognizer.load('ner.model')
 
+    # Load raw data
     data_csv = pd.read_csv('../data.csv')
+
+    # Fetch column 'title'
     datas = data_csv['title']
+
+    # Run in different method according to arg.method
     if args.method == 'postagger':
         entities = PostagResult(datas, postagger, segmentor)
         target_file = open('target_postagger.csv', 'w', encoding='utf-8-sig')
@@ -80,8 +85,9 @@ if __name__ == '__main__':
         print("Invalid method!")
         exit(0)
 
-    postagger.release()  # release model
-    segmentor.release()  # release model
+    postagger.release()  # Release model
+    segmentor.release()  # Release model
 
+    # Write final result to csv file
     sorted_entities = sorted(entities.items(), key=lambda t:len(t[0]), reverse=True)
-    dump_to_file(target_file)   
+    dump_result_to_csv(target_file)   

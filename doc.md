@@ -48,7 +48,7 @@ from pyltp import Segmentor, Postagger, NamedEntityRecognizer
         ```
         分词结果存放在\$DM_EXPERIMENT\$/DivedeData/data.csv文件中
     2. 分词结果评价
-        由于没有提供分词结果的Ground Truth， 因此对于分词测试的结果的评估只能以人工的方式进行评价。我们在测试语料中，随机抽样600条分词结果。
+        由于没有提供分词结果的Ground Truth， 因此对于分词测试的结果的评估只能以人工的方式进行评价，同样，以人工方式评价时，相关指标也会有人为因素的干扰，因此在这里不考虑统计准确度等指标，只考虑人为的评价。我们在测试语料中，随机抽样600条分词结果。
 
 ## 三、 任务2—寻找最长名词实体
 &emsp;&emsp;本任务我们计划使用两种不同的方式来寻找最长的名词实体，一种是通过**词性标注(Part-of-speech Tagging) **，将连续的，相近词性的词语进行合并；另一种是通过**命名实体检测(Named Entity Recognition)** ，将词语进行合并。
@@ -121,11 +121,25 @@ from pyltp import Segmentor, Postagger, NamedEntityRecognizer
 
 3. 方法对比与评价
     事实上，命名实体标注(ner)是基于分词和词性标注基础上的任务，它使用了这两个结果来检测命名实体。因此这两种方法的效果相差并不多。
+    在总体效果上，命名实体标注的方法较词性标注更好一些。例如，下面这句分词后的结果：
+
+    ```
+    分词后结果：“汇丰 控股 集团 主席 葛霖 ： 没有 在 印度 上市 的 计划”
+
+    词性标注结果：['nz', 'v', 'n', 'n', 'nh', 'wp', 'v', 'p', 'ns', 'v', 'u', 'n']
+    词性标注方法：“汇丰 控股 集团主席葛霖 ： 没有 在 印度 上市 的 计划”
+
+    命名实体标注结果：['B-Ni', 'I-Ni', 'E-Ni', 'O', 'S-Nh', 'O', 'O', 'O', 'S-Ns', 'O', 'O', 'O']
+    命名实体标注方法：“汇丰控股集团主席葛霖 ： 没有 在 印度 上市 的 计划”
+    ```
+    &emsp;&emsp;可见，由于词性标注将“控股”一次标注为了"v"，即动词，因此我们编写的词性标注方法不可能将动词和其它词语连接起来，导致无法找到更长的名词实体。相反将分词结果和词性标注结果送入ner模型后，即使“控股”为动词，也可以通过上下文来预测出“控股”属于“Ni”类型，即机构名。
+    &emsp;&emsp;实际上，我们所做的只是利用命名实体识别或者词性标注的结果，将分词数据合并了起来。而命名实体识别可以看作是在词性标注上多做了一步，因此我们使用命名实体识别的结果可以使得识别结果更加具有鲁棒性。
 ## 四、文件说明
 &emsp;&emsp;DivideData目录中，data.xls为原始数据，data.csv为原始数据的csv版本，data_split.csv为分词后数据，可运行model/task.py，调用split_data函数获得。
 &emsp;&emsp;DivideData/model目录中，\*.model文件为pyltp的预训练模型文件；task.py包括任务一、二的代码，可直接运行对应函数获得(寻找最长名词实体的)结果；split.py文件是完整的程序文件，可直接处理raw data获得最长名词实体合并后的结果(data_processed_\*.csv)以及作业要求的实体名词个数统计结果(target_\*.csv)。
 &emsp;&emsp;split.py支持两种方法，调用`python ./split.py --method=postagger`可使用词性标注方法获得结果，调用`python ./split.py --method=recognizer`可使用命名实体识别方法获得结果。
 &emsp;&emsp;utils.py为工具包，用来连接词语。
+
 ## 参考文献
 [1]Meishan Zhang, Zhilong Deng，Wanxiang Che, and Ting Liu. Combining Statistical Model and Dictionary for Domain Adaption of Chinese Word Segmentation. Journal of Chinese Information Processing. 2012, 26 (2) : 8-12 (in Chinese)
 [2]Zhenghua Li, Min Zhang, Wanxiang Che, Ting Liu, Wenliang Chen, and Haizhou Li. Joint Models for Chinese POS Tagging and Dependency Parsing. In Proceedings of the 2011 Conference on Empirical Methods in Natural Language Processing (EMNLP 2011). 2011.07, pp. 1180-1191. Edinburgh, Scotland, UK.

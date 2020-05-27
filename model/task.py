@@ -1,8 +1,11 @@
 '''
-@author Rongqing Li,     
-@date 5/27/2020
+@name task.py
+@author Jing Wang, Rongqing Li,     
+        Yuting Ling, Qitan Shao
+@date 5/26/2020
 @description Codes for writing documents(splited to many parts)
 '''
+
 # 导入Segmentor, pandas模块
 from pyltp import Segmentor
 from pyltp import Postagger

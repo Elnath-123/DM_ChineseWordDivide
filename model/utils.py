@@ -1,3 +1,10 @@
+'''
+@name utils.py
+@author Jing Wang, Rongqing Li,     
+        Yuting Ling, Qitan Shao
+@date 5/26/2020
+@description utils package for task 1,2
+'''
 
 class Utils:
     def __init__(self, entities=None):
@@ -34,7 +41,7 @@ class Utils:
         concat_word = []
         if mode == 'postags':
             longest = words[0]
-            for i in range(1, len(tag_post)):
+            for i in range(1, len(tag_postag)):
                 #noun-noun 海上-天然气-项目
                 if self.isnoun(tag_postag[i - 1]) and self.isnoun(tag_postag[i]):
                     longest += words[i]

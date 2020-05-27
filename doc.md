@@ -3,7 +3,7 @@
 ## 一、实验准备
 
 1. 分词工具
-&emsp;本次实验使用哈工大nlp团队制作的pyltp工具。本次实验主要用到分词，词性标注，以及命名实体识别功能。
+&emsp;&emsp;本次实验使用哈工大nlp团队制作的pyltp工具。本次实验主要用到分词，词性标注，以及命名实体识别功能。
 <br>
 
 2. 环境准备
@@ -13,21 +13,82 @@ https://mlln.cn/2018/01/31/pyltp%E5%9C%A8windows%E4%B8%8B%E7%9A%84%E7%BC%96%E8%A
     3. 从下方网站下载模型文件压缩包后解压。
 http://ospm9rsnd.bkt.clouddn.com/model/ltp_data_v3.4.0.zip
 
-&emsp;在本实验中需要Segmentor, Postagger, NamedEntityRecognizer三个模块，因此应在python文件中导入
+&emsp;&emsp;在本实验中需要Segmentor, Postagger, NamedEntityRecognizer三个模块，因此应在python文件中导入
 
 ```python
 from pyltp import Segmentor, Postagger, NamedEntityRecognizer
 ```
 
 ## 二、 任务1—分词
-1. 分词算法
-   &emsp;传统的分词方法有基于词典的分词以及基于统计的分词（基于条件随机场模型）。
-   &emsp;在ltp工具的官方文档中，引用了论文"Combining Statistical Model and Dictionary for Domain Adaption of Chinese Word Segmentation"其将传统的CRF分词与外部词典相结合，训练出了一款领域自适应性更好，F-measure指标更高的分词算法，其结构如下图所示。
+1. LTP分词算法
+   &emsp;&emsp;传统的分词方法有基于词典的分词以及基于统计的分词（基于条件随机场模型）。
+   &emsp;&emsp;在ltp工具的官方文档中，引用了论文"Combining Statistical Model and Dictionary for Domain Adaption of Chinese Word Segmentation"其将传统的CRF分词与外部词典相结合，训练出了一款领域自适应性更好，F-measure指标更高的分词算法，其结构如下图所示。
    <div align=center><img src=pic/分词structure.jpg><br/>图1 分词网络结构</div>
-   &emsp;如图所示，此模型将外部词典（包括领域词典和通用词典）所生成的特征与分词语料的特征进行融合，增强模型可以学习到的特征从而获得更好的分词方法。具体的特征融合方法请参考<sup>[1]</sup>。
+   &emsp;&emsp;如图所示，此模型将外部词典（包括领域词典和通用词典）所生成的特征与分词语料的特征进行融合，增强模型可以学习到的特征从而获得更好的分词方法。具体的特征融合方法请参考<sup>[1]</sup>。
    <br></br>
 2. 利用预训练分词模型进行分词
+    1. 分词程序
+        ```python
+        # 导入Segmentor, pandas模块
+        from pyltp import Segmentor
+        import pandas as pd
+        # 加载分词模型
+        segmentor = Segmentor()
+        segmentor.load('cws.model') 
+        # 加载将要被分词的数据
+        data_csv = pd.read_csv('../data.csv', encoding='utf-8-sig')
+        # 选取'title'列
+        datas = data_csv['title']
+        # 打开新的文件，存放分词结果
+        data_split = open('../data_split.csv', 'w', encoding='utf-8-sig')
+        for data in datas:
+            # 分词后结果写入文件
+            words = segmentor.segment(data)
+            data_split.write(' '.join(words) + '\n')
+        ```
+        分词结果存放在\$DM_EXPERIMENT\$/DivedeData/data.csv文件中
+    2. 分词结果评价
+        由于没有提供分词结果的Ground Truth， 因此对于分词测试的结果的评估只能以人工的方式进行评价。我们在测试语料中，随机抽样600条分词结果。
 
+## 三、 任务2—寻找最长名词实体
+&emsp;&emsp;本任务我们计划使用两种不同的方式来寻找最长的名词实体，一种是通过**词性标注(Part-of-speech Tagging) **，将连续的，相近词性的词语进行合并；另一种是通过**命名实体检测(Named Entity Recognition)** ，将词语进行合并。
+1. 词性标注方法
+&emsp;&emsp;词性标注方法是一种通过将分词结果进行词性标注，再将相近词性的词语合并，以找到最长名词实体的方法。
+    a. LTP词性标注算法
+ LTP工具的词性标注方法在2011年发表在ACL上的一篇叫做"Joint Models for Chinese POS Tagging and Dependency Parsing"[2]的论文中提及。其主要创新是将 词性标注(POS Tagging) 与 依存句法分析(Dependency Parsing) 任务合并，最终的实验结果在这两个任务中都有一定的提升。此外，还提供了一种对词性标注空间剪枝的方法，提高分析的速度。具体模型请参考[2]
+    b. LTP词性标注程序
+    ```python
+        from utils import Utils
+    from pyltp import Segmentor
+    from pyltp import Postagger
+    # 分词模型
+    segmentor = Segmentor()
+    segmentor.load('cws.model')
+    # 词性标注模型
+    postagger = Postagger()
+    postagger.load('pos.model')
 
-   ## 参考文献
-   [1]Meishan Zhang, Zhilong Deng，Wanxiang Che, and Ting Liu. Combining Statistical Model and Dictionary for Domain Adaption of Chinese Word Segmentation. Journal of Chinese Information Processing. 2012, 26 (2) : 8-12 (in Chinese)
+    # 加载将要被分词的数据
+    data_csv = pd.read_csv('../data.csv', encoding='utf-8-sig')
+    datas = data_csv['title']
+
+    util = Utils()
+    data_processed = open('./data_processed_postagger.csv', 'w', encoding='utf-8')
+    for data in datas:
+        words = segmentor.segment(data)  # 分词
+        postags = postagger.postag(words) # 标注
+        word_split = ' '.join(words).split(' ') 
+        postags_split = ' '.join(postags).split(' ')
+        # 连接词语
+        concat_word = util.concat(word_split, postags_split, type='postags')
+        data_processed.write(concat_word + '\n')
+    data_processed.close()
+    ```
+    连接词语使用utils.py中的concat函数，具体实现参见`$DM_EXPERIMENT$/DivideData/model/utils.py`
+    词性标注并合并的后的结果存放在`$DM_EXPERIMENT$/DivideData/model/ data_processed_postagger.csv`
+    c. 结果评价
+    &emsp;&emsp;同样在标注的结果中，进行随机抽样，抽取600条名词实体合并后的结果。
+2. 命名实体识别方法
+## 参考文献
+[1]Meishan Zhang, Zhilong Deng，Wanxiang Che, and Ting Liu. Combining Statistical Model and Dictionary for Domain Adaption of Chinese Word Segmentation. Journal of Chinese Information Processing. 2012, 26 (2) : 8-12 (in Chinese)
+[2]Zhenghua Li, Min Zhang, Wanxiang Che, Ting Liu, Wenliang Chen, and Haizhou Li. Joint Models for Chinese POS Tagging and Dependency Parsing. In Proceedings of the 2011 Conference on Empirical Methods in Natural Language Processing (EMNLP 2011). 2011.07, pp. 1180-1191. Edinburgh, Scotland, UK.

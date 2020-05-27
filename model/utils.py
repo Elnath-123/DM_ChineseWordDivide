@@ -30,22 +30,22 @@ class Utils:
             return True
         return False
 
-    def concat(self, words, tags, tag='netags'):
+    def concat(self, words, tag_postag, tag_ner, mode='netags'):
         concat_word = []
-        if tag == 'postags':
+        if mode == 'postags':
             longest = words[0]
-            for i in range(1, len(tags)):
+            for i in range(1, len(tag_post)):
                 #noun-noun 海上-天然气-项目
-                if self.isnoun(tags[i - 1]) and self.isnoun(tags[i]):
+                if self.isnoun(tag_postag[i - 1]) and self.isnoun(tag_postag[i]):
                     longest += words[i]
                 #adj-noun 美丽-风景
-                elif self.isadj(tags[i - 1]) and self.isnoun(tags[i]):
+                elif self.isadj(tag_postag[i - 1]) and self.isnoun(tag_postag[i]):
                     longest += words[i]
                 #number-quantity 一-个  一-家
-                elif self.isnumber(tags[i - 1]) and self.isquantity(tags[i]): 
+                elif self.isnumber(tag_postag[i - 1]) and self.isquantity(tag_postag[i]): 
                     longest += words[i]
                 #quantity-noun (一)家-公司
-                elif self.isquantity(tags[i - 1]) and self.isnoun(tags[i]):
+                elif self.isquantity(tag_postag[i - 1]) and self.isnoun(tag_postag[i]):
                     longest += words[i]
                 else:
                     concat_word.append(longest)
@@ -55,11 +55,12 @@ class Utils:
                         self.entities[longest][0] += 1
                     longest = words[i]
             concat_word.append(longest)
-        elif tag == 'netags':
+        elif mode == 'netags':
             longest = words[0]
-            for i in range(1, len(tags)):
-
-                if self.isner(tags[i]) and self.isner(tags[i - 1]):
+            for i in range(1, len(tag_ner)):
+                if self.isnoun(tag_postag[i]):
+                    longest += words[i] 
+                elif self.isner(tag_ner[i]) and self.isner(tag_ner[i - 1]):
                     longest += words[i]
                 else:
                     concat_word.append(longest)
@@ -75,14 +76,19 @@ class Utils:
 if __name__ == '__main__':
     from pyltp import Segmentor
     from pyltp import Postagger
+    from pyltp import NamedEntityRecognizer
     utils = Utils()
     segmentor = Segmentor()
     postagger = Postagger()
+    recognizer = NamedEntityRecognizer()
     segmentor.load('cws.model')
     postagger.load('pos.model')
+    recognizer.load('ner.model')
     word = input()
     seg_result = ' '.join(segmentor.segment(word)).split(' ')
     print(seg_result)
     pos_result = ' '.join(postagger.postag(seg_result)).split(' ')
     print(pos_result)
+    ner_result = ' '.join(recognizer.recognize(seg_result, pos_result)).split(' ')
+    print(ner_result)
     

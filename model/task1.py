@@ -6,6 +6,7 @@
 # 导入Segmentor, pandas模块
 from pyltp import Segmentor
 from pyltp import Postagger
+from pyltp import NamedEntityRecognizer
 import pandas as pd
 import random
 from utils import Utils
@@ -27,9 +28,10 @@ def split_data():
         data_split.write(' '.join(words) + '\n')
     segmentor.release()
 
-# Task1-随机抽样600条分词结果
+# Task1-随机抽样600条结果
 def random_select():
-    with open('../data_split.csv', 'r', encoding='utf-8-sig') as data_split:
+    file_name = '../data_split.csv'
+    with open(file_name, 'r', encoding='utf-8-sig') as data_split:
         datas = data_split.readlines()
         datas = [data.strip() for data in datas]
         random.shuffle(datas)
@@ -61,6 +63,33 @@ def postag_data():
         postags_split = ' '.join(postags).split(' ')
         # 连接词语
         concat_word = util.concat(word_split, postags_split, type='postags')
+        data_processed.write(concat_word + '\n')
+    data_processed.close()
+
+# Task2-命名实体识别方法
+def ner_data():
+     # 分词模型
+    segmentor = Segmentor()
+    segmentor.load('cws.model')
+    # 词性标注模型
+    postagger = Postagger()
+    postagger.load('pos.model')
+    # 命名实体模型
+    recognizer = NamedEntityRecognizer()
+    NamedEntityRecognizer.load('ner.model')
+    # 加载将要被分词的数据
+    data_csv = pd.read_csv('../data.csv', encoding='utf-8-sig')
+    datas = data_csv['title']
+
+    util = Utils()
+    data_processed = open('./data_processed_recognizer.csv', 'w', encoding='utf-8')
+    for data in datas:
+        words = segmentor.segment(data)
+        postags = postagger.postag(words)
+        word_split = ' '.join(words).split(' ')
+        netags = recognizer.recognize(words, postags)
+        netag_split = ' '.join(netags).split(' ')
+        concat_word = util.concat(word_split, netag_split, tag='netags')
         data_processed.write(concat_word + '\n')
     data_processed.close()
 

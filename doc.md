@@ -86,9 +86,46 @@ from pyltp import Segmentor, Postagger, NamedEntityRecognizer
     ```
     连接词语使用utils.py中的concat函数，具体实现参见`$DM_EXPERIMENT$/DivideData/model/utils.py`
     词性标注并合并的后的结果存放在`$DM_EXPERIMENT$/DivideData/model/ data_processed_postagger.csv`
-    c. 结果评价
-    &emsp;&emsp;同样在标注的结果中，进行随机抽样，抽取600条名词实体合并后的结果。
+
 2. 命名实体识别方法
+命名实体识别又称作“专名识别”，它可以识别文本中具有特定意义的实体，主要包括人名、地名、机构名、专有名词等。
+    a. 命名实体识别代码
+    ```python
+     # 分词模型
+    segmentor = Segmentor()
+    segmentor.load('cws.model')
+    # 词性标注模型
+    postagger = Postagger()
+    postagger.load('pos.model')
+    # 命名实体模型
+    recognizer = NamedEntityRecognizer()
+    NamedEntityRecognizer.load('ner.model')
+    # 加载将要被分词的数据
+    data_csv = pd.read_csv('../data.csv', encoding='utf-8-sig')
+    datas = data_csv['title']
+
+    util = Utils()
+    data_processed = open('./data_processed_recognizer.csv', 'w', encoding='utf-8')
+    for data in datas:
+        words = segmentor.segment(data)
+        postags = postagger.postag(words)
+        word_split = ' '.join(words).split(' ')
+        netags = recognizer.recognize(words, postags)
+        netag_split = ' '.join(netags).split(' ')
+        concat_word = util.concat(word_split, netag_split, tag='netags')
+        data_processed.write(concat_word + '\n')
+    data_processed.close()
+    ```
+    连接词语使用utils.py中的concat函数，具体实现参见`$DM_EXPERIMENT$/DivideData/model/utils.py`
+    词性标注并合并的后的结果存放在`$DM_EXPERIMENT$/DivideData/model/ data_processed_recognizer.csv`
+
+3. 方法对比与评价
+    事实上，命名实体标注(ner)是基于分词和词性标注基础上的任务，它使用了这两个结果来检测命名实体。因此这两种方法的效果相差并不多。
+## 四、文件说明
+&emsp;&emsp;DivideData目录中，data.xls为原始数据，data.csv为原始数据的csv版本，data_split.csv为分词后数据，可运行model/task.py，调用split_data函数获得。
+&emsp;&emsp;DivideData/model目录中，\*.model文件为pyltp的预训练模型文件；task.py包括任务一、二的代码，可直接运行对应函数获得(寻找最长名词实体的)结果；split.py文件是完整的程序文件，可直接处理raw data获得最长名词实体合并后的结果(data_processed_\*.csv)以及作业要求的实体名词个数统计结果(target_\*.csv)。
+&emsp;&emsp;split.py支持两种方法，调用`python ./split.py --method=postagger`可使用词性标注方法获得结果，调用`python ./split.py --method=recognizer`可使用命名实体识别方法获得结果。
+&emsp;&emsp;utils.py为工具包，用来连接词语。
 ## 参考文献
 [1]Meishan Zhang, Zhilong Deng，Wanxiang Che, and Ting Liu. Combining Statistical Model and Dictionary for Domain Adaption of Chinese Word Segmentation. Journal of Chinese Information Processing. 2012, 26 (2) : 8-12 (in Chinese)
 [2]Zhenghua Li, Min Zhang, Wanxiang Che, Ting Liu, Wenliang Chen, and Haizhou Li. Joint Models for Chinese POS Tagging and Dependency Parsing. In Proceedings of the 2011 Conference on Empirical Methods in Natural Language Processing (EMNLP 2011). 2011.07, pp. 1180-1191. Edinburgh, Scotland, UK.

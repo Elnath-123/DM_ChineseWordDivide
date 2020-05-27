@@ -30,7 +30,7 @@ def PostagResult(datas, postagger, segmentor):
         postags = postagger.postag(words) # pos tagging
         word_split = ' '.join(words).split(' ')
         postags_split = ' '.join(postags).split(' ')
-        concat_word = util.concat(word_split, postags_split, type='postags')
+        concat_word = util.concat(word_split, postags_split, tag_ner=None, mode='postags')
         data_processed.write(concat_word + '\n')
     entities = util.entities
     data_processed.close()
@@ -43,11 +43,11 @@ def NameEntityResult(datas, postagger, segmentor, recognizer):
     for data in datas:
         words = segmentor.segment(data)
         postags = postagger.postag(words)
+        postags_split = ' '.join(postags).split(' ')
         word_split = ' '.join(words).split(' ')
-
         netags = recognizer.recognize(words, postags)
         netag_split = ' '.join(netags).split(' ')
-        concat_word = util.concat(word_split, netag_split, tag='netags')
+        concat_word = util.concat(word_split, postags_split, netag_split, mode='netags')
         data_processed.write(concat_word + '\n')
     entities = util.entities
     data_processed.close()
